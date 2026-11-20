@@ -55,7 +55,7 @@ x11_connection* x11_connect(SOCKET socket, const x11_connection_info* info)
             return NULL;
         }
 
-        printlnf("{ %u ; %u ; %u.%u ; %u }", resheader.success, resheader.reason_len, resheader.protocol_major_version, resheader.protocol_minor_version, resheader.additional_data_len);
+        //printlnf("{ %u ; %u ; %u.%u ; %u }", resheader.success, resheader.reason_len, resheader.protocol_major_version, resheader.protocol_minor_version, resheader.additional_data_len);
         if (resheader.success == 0) {
             char* reason = _alloca(resheader.reason_len);
             status = recv(socket, reason, resheader.reason_len, 0);
@@ -99,7 +99,7 @@ x11_connection* x11_connect(SOCKET socket, const x11_connection_info* info)
     connection->vendor = (char*)(state + 1);
     connection->pixmap_formats = (x11_FORMAT*)(connection->vendor + x11_PAD(state->vendor_len));
     connection->roots = (x11_SCREEN*)(connection->pixmap_formats + state->num_formats);
-    printlnf("%.*s %u %u 0x%08x 0x%08x", state->vendor_len, connection->vendor, connection->pixmap_formats[1].bits_per_pixel, connection->roots->root, connection->last_id, connection->max_id);
+    //printlnf("%.*s %u %u 0x%08x 0x%08x", state->vendor_len, connection->vendor, connection->pixmap_formats[1].bits_per_pixel, connection->roots->root, connection->last_id, connection->max_id);
     return connection;
 }
 
