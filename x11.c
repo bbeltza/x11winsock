@@ -140,8 +140,8 @@ void x11_free_id(x11_connection* connection, x11_CARD32 id)
     }
 
     x11res_ConnectSuccess* state = X11_GET_CONNECTION_STATE(connection);
-    if (state->resource_id_base < id) {
-        printlnf("x11_free_id: Invalid ID...");
+    if (state->resource_id_base > id) {
+        printlnf("x11_free_id: Invalid ID: %u", id);
         abort();
     }
 

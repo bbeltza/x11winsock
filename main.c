@@ -58,6 +58,11 @@ static const char* get_d3derr_string(HRESULT hr)
     }
 }
 
+static int invalid_cookie(const char* magicookie) {
+    printlnf("Invalid magic cookie: '%s'. Must be in hexadecimal format, without any prefix. Use `xauth list` in your host machine to lookup the magic cookie.", magicookie);
+    return -1;
+}
+
 int main(int argc, char** argv)
 {
     char* ipaddr = NULL;
@@ -99,8 +104,7 @@ int main(int argc, char** argv)
 
     int cookielen = (int)strlen(magicookie);
     if (!cookielen || cookielen & 0x1) {
-        printlnf("Invalid magic cookie: '%s'", magicookie);
-        return -1;
+        return invalid_cookie(magicookie);
     }
     int cookiebytelen = cookielen >> 1;
     x11_CARD8* cookiedata = _alloca(cookiebytelen);
@@ -119,16 +123,8 @@ int main(int argc, char** argv)
     }
 
     if (!cookiedata) {
-        printlnf("Invalid magic cookie: '%s'", magicookie);
-        return -1;
+        return invalid_cookie(magicookie);
     }
-
-    printlnf("Cookie:");
-    printf(" ");
-    for (int i = 0; i < cookiebytelen; i++) {
-        printf("%x", cookiedata[i]);
-    }
-    fputc('\n', stdout);
 
     int status;
     WSADATA wsa_data;
@@ -271,6 +267,7 @@ int main(int argc, char** argv)
 
     printlnf("Connection successful!");
 
+#if 0
     {
         x11_SCREEN* scrn = connection->roots;
         for (int i = 0; i < state->num_screens; i++) {
@@ -288,18 +285,20 @@ int main(int argc, char** argv)
             scrn = (x11_SCREEN*)depth;
         }
     }
+#endif
 
     x11_WINDOW window = x11_generate_id(connection);
     x11_GCONTEXT gcontext = x11_generate_id(connection);
     {
         struct {
             x11req_CreateWindow createwindow;
+            x11_CARD32 createwindow_values[1];
             x11req_CreateGC creategc;
             x11req_MapWindow mapwindow;
         } reqs;
         reqs.createwindow.opcode = 1;
         reqs.createwindow.depth = connection->roots->root_depth;
-        reqs.createwindow.req_len = sizeof(x11req_CreateWindow)/4;
+        reqs.createwindow.req_len = (sizeof(x11req_CreateWindow) + sizeof(reqs.createwindow_values))/4;
         reqs.createwindow.wid = window;
         reqs.createwindow.parent = connection->roots->root;
         reqs.createwindow.width = w;
@@ -309,7 +308,8 @@ int main(int argc, char** argv)
         reqs.createwindow.border_width = 0;
         reqs.createwindow.cls = 1; /* InputOutput */
         reqs.createwindow.visual = 0; /* CopyFromParent */
-        reqs.createwindow.value_mask = 0x00000000;
+        reqs.createwindow.value_mask = 0x00000002;
+        reqs.createwindow_values[0] = D3DCOLOR_RGBA(180, 180, 255, 255);
 
         reqs.creategc.opcode = 55;
         reqs.creategc.req_len = sizeof(x11req_CreateGC)/4;
@@ -339,8 +339,6 @@ int main(int argc, char** argv)
         putimage->left_pad = 0;
         putimage->depth = connection->roots->root_depth;
 
-        printlnf("%d %d %d %d", row_pitch, (row_pitch*h)/4, putimage->req_len, state->max_req_len);
-
         D3DLOCKED_RECT locked;
         hr = dxreadback_surface->lpVtbl->LockRect(dxreadback_surface, &locked, NULL, D3DLOCK_READONLY);        
         if (FAILED(hr)) {
@@ -348,7 +346,6 @@ int main(int argc, char** argv)
             goto ENDD3D;
         }
 
-#if 1
         x11_BYTE* pixel_data = x11req_PutImage_data(putimage);
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
@@ -359,7 +356,6 @@ int main(int argc, char** argv)
                 p_pixel[2] = p_srcpixel[2];
             }
         }
-#endif
 
         status = send(socket, (const char*)putimage, putimage_len, 0);
         HeapFree(connection->hheap, 0, putimage);
@@ -368,6 +364,11 @@ int main(int argc, char** argv)
     while (1) {
         x11res_Reply reply;
         status = recv(socket, (char*)&reply, sizeof(reply), 0);
+        if (!status) {
+            printlnf("Connection closed");
+            break;
+        }
+
         if (status == SOCKET_ERROR) {
             printlnf("IO error: Connection possibly lost?");
             break;
@@ -380,6 +381,7 @@ int main(int argc, char** argv)
         }
     }
 
+    x11_free_id(connection, gcontext);
     x11_free_id(connection, window);
 ENDD3D:
     #define SAFERELEASE(p) if (p) (p)->lpVtbl->Release(p)
