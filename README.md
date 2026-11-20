@@ -1,11 +1,15 @@
-# An X client running remotely on Windows!
+# An X client running remotely on Windows
 
 ![The program running this window of a triangle having been rendered remotely from Windows](./preview.png)
 
 Small little project named "X11WinSock", for short, it's a demonstration of an X client running remotely from a Windows machine.
+
 For long, it uses WinSock 2 to connect to a remote X server that has been configured correctly to listen to remote connections, and to send the correct requests to create a window, display it, and draw stuff on it. From the Windows machine, it also uses Direct3D 9 to open a device, and rasterize a triangle (the typical Hello Triangle) that would then be sent to the X server to be displayed on the window.
 
+
+
 It's a niche project that took a few days to make since I've started getting interested in the different Linux/Unix protocols used for porting stuff to other platforms. Also one of the craziest "Hello Triangle"s that I've made!
+
 Since X uses sockets internally, and can run over the network, I've started experimenting with getting an X client to run with raw unix sockets (so without any client libraries like Xlib or xcb), and then made this! Though for porting I'm fine with using xcb, this made me learn more about the protocol that I didn't quite understand back then, and thus made me understand more how to use those client libraries.
 
 ## Building
@@ -26,9 +30,9 @@ Since X uses sockets internally, and can run over the network, I've started expe
   - SSH is recommended, this is installed by default on Windows.
 
 To build the program, simply inside the repository's directory, type:
-    ``` bat
-    build.bat
-    ```
+``` bat
+build.bat
+```
 
 ## Running
 
